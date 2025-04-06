@@ -1,0 +1,40 @@
+flowchart TD
+    subgraph User["User Interface"]
+        A[Upload Fabric Images] --> B[Display Analysis]
+        B --> C[Refine Prompt]
+        C --> D[View Generated Design]
+        D --> E[Edit Prompt/Regenerate]
+    end
+
+    subgraph Flask["Flask Application"]
+        F[Upload Handler] --> G[Image Analysis]
+        G --> H[Initial Prompt Generation]
+        H --> I[Prompt Refinement]
+        I --> J[Image Generation]
+        K[Regenerate API] --> J
+    end
+
+    subgraph JS["JavaScript Client"]
+        L[Document Event Listeners] -->|DOM Events| M[API Calls]
+        M -->|Fetch API| K
+    end
+
+    subgraph Storage["Google Cloud Storage"]
+        N[GCS Bucket]
+    end
+
+    subgraph GenAI["Google Generative AI"]
+        O[Gemini Pro Vision] --> P[Image Analysis]
+        Q[Gemini Pro] --> R[Text Prompt Generation]
+        S[Gemini 2.0 Flash] --> T[Image Generation]
+    end
+
+    %% Connect the components
+    A -->|Form Submit| F
+    F -->|Upload Files| N
+    G -->|API Request| O
+    H -->|API Request| Q
+    J -->|API Request| S
+    E -->|Event Listener| L
+    J -->|Response| D
+    K -->|Response| M

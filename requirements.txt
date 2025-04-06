@@ -1,0 +1,7 @@
+flask
+google-cloud-storage
+google-generativeai
+python-dotenv
+Werkzeug
+google-ai-generativelanguage
+openai

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+    <h1 class="text-3xl font-bold mb-6 text-center">Your Fabric Refit Design</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {% for path in image_paths %}
+        <div>
+            <img src="{{ path }}" alt="Fabric Input" class="fabric-preview">
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold mb-2">Design Prompt</h2>
+        <div class="p-4 bg-gray-50 rounded-lg">
+            <p class="text-gray-800">{{ prompt }}</p>
+        </div>
+    </div>
+    
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold mb-4">Generated Design</h2>
+        <div class="bg-gray-100 p-4 rounded-lg text-center">
+            <img id="resultImage" src="{{ image_url }}" alt="Generated Design" class="result-image mx-auto">
+            {% if generation_text %}
+            <div id="generationText" class="mt-4 p-3 bg-gray-50 rounded text-sm text-gray-700">
+                {{ generation_text }}
+            </div>
+            {% else %}
+            <div id="generationText" class="mt-4 p-3 bg-gray-50 rounded text-sm text-gray-700 hidden"></div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-8 space-y-4">
+        <div class="flex justify-between">
+            <button id="regenerateBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition">
+                Regenerate Design
+            </button>
+            <button id="editPromptBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition">
+                Edit Prompt
+            </button>
+        </div>
+        
+        <div id="promptEditor" class="hidden space-y-4">
+            <textarea id="editedPrompt" rows="4" 
+                      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">{{ prompt }}</textarea>
+            <div class="flex justify-end">
+                <button id="applyPromptBtn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition">
+                    Apply Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const editPromptBtn = document.getElementById('editPromptBtn');
+        const promptEditor = document.getElementById('promptEditor');
+        const regenerateBtn = document.getElementById('regenerateBtn');
+        const applyPromptBtn = document.getElementById('applyPromptBtn');
+        const editedPrompt = document.getElementById('editedPrompt');
+        const resultImage = document.getElementById('resultImage');
+        const generationText = document.getElementById('generationText');
+        
+        // Show/hide prompt editor
+        editPromptBtn.addEventListener('click', function() {
+            promptEditor.classList.toggle('hidden');
+        });
+        
+        // Apply edited prompt and regenerate
+        applyPromptBtn.addEventListener('click', function() {
+            regenerateDesign(editedPrompt.value);
+        });
+        
+        // Regenerate with current prompt
+        regenerateBtn.addEventListener('click', function() {
+            regenerateDesign(editedPrompt.value);
+        });
+        
+        // Function to call API and update image
+        function regenerateDesign(prompt) {
+            // Show loading state
+            resultImage.classList.add('opacity-50');
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'text-center py-4';
+            loadingIndicator.innerHTML = '<p>Generating design...</p>';
+            resultImage.parentElement.appendChild(loadingIndicator);
+            
+            fetch('/api/regenerate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt: prompt })
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultImage.src = data.image_url;
+                resultImage.classList.remove('opacity-50');
+                editedPrompt.value = data.prompt;
+                promptEditor.classList.add('hidden');
+                
+                // Update generation text if available
+                if (data.generation_text && data.generation_text.trim() !== '') {
+                    generationText.textContent = data.generation_text;
+                    generationText.classList.remove('hidden');
+                } else {
+                    generationText.classList.add('hidden');
+                }
+                
+                // Remove loading indicator
+                const loadingElement = document.querySelector('.text-center.py-4');
+                if (loadingElement) {
+                    loadingElement.remove();
+                }
+                
+                // Show error if any
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to regenerate design. Please try again.');
+                resultImage.classList.remove('opacity-50');
+                
+                // Remove loading indicator
+                const loadingElement = document.querySelector('.text-center.py-4');
+                if (loadingElement) {
+                    loadingElement.remove();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

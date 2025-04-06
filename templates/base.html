@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fabric AI Refit</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .fabric-preview {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .result-image {
+            max-width: 100%;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-indigo-700 text-white p-4 shadow-md">
+        <div class="container mx-auto flex items-center justify-between">
+            <a href="/" class="text-2xl font-bold">🧵✨ Fabric AI Refit</a>
+        </div>
+    </nav>
+    
+    <main class="container mx-auto py-8 px-4">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer class="bg-gray-800 text-white p-4 mt-auto">
+        <div class="container mx-auto text-center">
+            <p>© 2025 Fabric AI Refit - Transform Your Old Fabrics</p>
+        </div>
+    </footer>
+
+    <!-- Include the external JavaScript file -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
+
