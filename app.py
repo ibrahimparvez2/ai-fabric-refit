@@ -11,6 +11,7 @@ from google.generativeai import types
 from dotenv import load_dotenv
 from helpers.dalle import generate_dalle_image
 import json
+from typing import Dict, List, Union
 
 # Load environment variables
 load_dotenv()
@@ -49,55 +50,110 @@ def upload_to_gcs(file_path, user_id, filename):
     blob.upload_from_filename(file_path)
     return f"gs://{bucket_name}/{destination_blob_name}"
 
-def analyze_images(image_paths):
-    """Generate tags for the uploaded images using Gemini Vision"""
+def analyze_images(image_paths: List[str]) -> Dict[str, Union[Dict, str]]:
+    """Generate detailed tags for the uploaded images using Gemini Vision"""
     model = genai.GenerativeModel('gemini-2.0-flash')
-    
     image_tags = {}
-    for path in image_paths:
-        image_data = open(path, "rb").read()
-        response = model.generate_content([
-            "Analyze this fabric image and provide tags for: material type, color, pattern, and texture. Format as JSON.",
-            {"mime_type": "image/jpeg", "data": image_data}
-        ])
-        # For simplicity we're assuming the response is well-formed
-        # In production, you would want more robust parsing
-        try:
-            tags = response.text
-            filename = os.path.basename(path)
-            image_tags[filename] = tags
-        except Exception as e:
-            image_tags[os.path.basename(path)] = str(e)
     
+    for path in image_paths:
+        try:
+            with open(path, "rb") as img_file:
+                image_data = img_file.read()
+                
+            prompt = [
+                "Analyze this fabric image and provide detailed information about: "
+                "material composition, color palette (including secondary colors), "
+                "pattern characteristics, texture properties, and structural elements. "
+                "Format as JSON with separate sections for each characteristic.",
+                {"mime_type": "image/jpeg", "data": image_data}
+            ]
+            
+            response = model.generate_content(prompt)
+            response_text = response.text.strip()
+            
+            # Clean the response text by removing extra formatting
+            response_text = response_text.replace('```json\n', '').rstrip('```')
+            
+            # Validate response
+            if not response_text:
+                print(f"Warning: Empty response from Gemini for {path}")
+                image_tags[os.path.basename(path)] = {"error": "Empty response from API"}
+                continue
+                
+            try:
+                # Parse the response text into a proper JSON structure
+                parsed_response = json.loads(response_text)
+                
+                result = {
+                    'color_palette': parsed_response.get('color_palette', {}).get('primary_color', 'unknown'),
+                    'material_type': parsed_response.get('material_composition', {}).get('likely_material', 'unknown'),
+                    'pattern': parsed_response.get('pattern_characteristics', {}).get('pattern_type', 'unknown'),
+                    'texture': parsed_response.get('texture_properties', {}).get('visual_texture', 'unknown'),
+                    'structural_elements': parsed_response.get('structural_elements', {}).get('details', [])
+                }
+                
+                filename = os.path.basename(path)
+                image_tags[filename] = result
+                
+            except json.JSONDecodeError as e:
+                print(f"Error parsing JSON for {path}: {str(e)}")
+                print(f"Raw response: {response_text}")
+                image_tags[os.path.basename(path)] = {"error": f"Invalid JSON response: {str(e)}"}
+                
+            except Exception as e:
+                print(f"Error processing {path}: {str(e)}")
+                image_tags[os.path.basename(path)] = {"error": f"Processing error: {str(e)}"}
+                
+        except Exception as e:
+            print(f"Error processing {path}: {str(e)}")
+            image_tags[os.path.basename(path)] = {"error": str(e)}
+            
     return image_tags
-
-def generate_initial_prompt(image_tags):
+    
+def generate_initial_prompt(image_tags: Dict[str, Union[Dict, str]]) -> str:
+    """Generate a creative prompt for fusing fabric elements into an upcycled design"""
     model = genai.GenerativeModel('gemini-2.0-flash')
     
-    # Convert stringified JSON values into real dicts and format nicely
     fabric_descriptions = []
-    for filename, tag_str in image_tags.items():
+    for filename, tag_data in image_tags.items():
         try:
-            print(f"Processing file: {filename}")  # Print filename for debugging
-            print(f"Tag string: {tag_str}")  # Print the raw tag string to see what it looks like
-            tags = json.loads(tag_str)  # Attempt to parse the JSON
-            desc = f"{filename}: {tags['color']} {tags['material_type']} with a {tags['pattern']} pattern and {tags['texture']} texture"
-            fabric_descriptions.append(desc)
+            if isinstance(tag_data, dict) and 'error' not in tag_data:
+                # Use color_palette instead of colors
+                colors = tag_data.get('color_palette', 'unknown')
+                if isinstance(colors, list):
+                    color_str = ', '.join(colors)
+                else:
+                    color_str = colors
+                
+                desc = f"{filename}: {color_str} {tag_data['material_type']} "
+                desc += f"featuring {tag_data['pattern']} patterns and {tag_data['texture']} texture"
+                fabric_descriptions.append(desc)
+                
         except Exception as e:
-            print(f"Error processing {filename}: {e}")  # Print the error message
+            print(f"Error processing {filename}: {str(e)}")
             fabric_descriptions.append(f"{filename}: (unreadable tags)")
-
-    formatted_tags = "\n".join(fabric_descriptions)
-        
-    input_text = (
-            "You're a fashion design assistant. "
-            "Based on the following fabric descriptions, generate a short, creative design idea (2-4 sentences). "
-            "Do NOT write a full design brief, assignment, or requirements list. Just a quick idea to inspire the user.\n\n"
-            f"Fabric descriptions: {formatted_tags}"
-        )
-    print(input_text)
-    response = model.generate_content(input_text)
-    return response.text
+    
+        prompt = (
+                "Design a practical, wearable garment that combines these materials in a simple, functional way. "
+                "Focus on everyday wearability and comfort. DOES not need to be a artistic piece and DO NOT write a full exploration of themes"
+                "Think about how these fabrics can work together in a straightforward, practical design please keep the concept to the point and not more than 300 words.\n\n"
+                
+                "Materials:\n" +
+                "\n".join(fabric_descriptions) + "\n\n"
+                
+                "Design a simple, practical garment that combines these elements in a functional way."
+            )
+    
+    print("Getting creative concept from Gemini...")
+    # Use lower temperature for more focused responses
+    generation_config = {
+        'temperature': 0.2,  # Lower temperature for more focused responses
+        #  'max_tokens': 150  # need to understand this 
+    }
+    
+    response = model.generate_content([prompt], generation_config=generation_config)
+    creative_concept = response.text.strip()
+    return creative_concept
 
 def generate_refined_image(prompt):
     """Generate a design image based on the refined prompt using Gemini 2.0 Flash"""
