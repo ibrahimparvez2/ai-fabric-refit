@@ -134,14 +134,14 @@ def generate_initial_prompt(image_tags: Dict[str, Union[Dict, str]]) -> str:
             fabric_descriptions.append(f"{filename}: (unreadable tags)")
     
         prompt = (
-                "Design a practical, wearable garment that combines these materials in a simple, functional way. "
-                "Focus on everyday wearability and comfort. DOES not need to be a artistic piece and DO NOT write a full exploration of themes"
-                "Think about how these fabrics can work together in a straightforward, practical design please keep the concept to the point and not more than 300 words.\n\n"
+                "Design a practical, wearable garment that combines these materials in a simple, realstic and functional way. "
+                "Focus on everyday wearability and comfort.DOES not need to be a artistic piece and DO NOT write a full exploration of themes or create an outfit"
+                "Think about how these fabrics can work together in a straightforward, practical design please keep the concept realistic and not more than 300 words.\n\n"
                 
                 "Materials:\n" +
                 "\n".join(fabric_descriptions) + "\n\n"
                 
-                "Design a simple, practical garment that combines these elements in a functional way."
+                "Design a single simple, practical garment that combines these elements in a functional way."
             )
     
     print("Getting creative concept from Gemini...")
