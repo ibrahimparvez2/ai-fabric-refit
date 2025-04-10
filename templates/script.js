@@ -21,7 +21,6 @@ function handleRefinePage() {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             const refinement = refinementInput.value;
-            // Handle refinement submission
             regenerateDesign(refinement);
         });
     }
@@ -31,11 +30,24 @@ function handleResultPage() {
     // Result page elements
     const regenerateBtn = document.getElementById('regenerateBtn');
     const resultImage = document.getElementById('resultImage');
+    const currentPrompt = document.getElementById('currentPrompt');
+    
+    // Add generation text div if it doesn't exist
+    if (!document.getElementById('generationText')) {
+        const resultContainer = resultImage.parentElement;
+        const generationTextDiv = document.createElement('div');
+        generationTextDiv.className = 'mt-4 p-3 bg-gray-50 rounded text-sm text-gray-700';
+        generationTextDiv.id = 'generationText';
+        resultContainer.appendChild(generationTextDiv);
+    }
     
     // Function to call API and update image
     function regenerateDesign(prompt) {
         // Show loading state
         resultImage.classList.add('opacity-50');
+        regenerateBtn.disabled = true;
+        regenerateBtn.classList.add('opacity-50');
+        
         const loadingIndicator = document.createElement('div');
         loadingIndicator.className = 'text-center py-4';
         loadingIndicator.innerHTML = '<p>Generating design...</p>';
@@ -77,6 +89,8 @@ function handleResultPage() {
             console.error('Error:', error);
             alert('Failed to regenerate design. Please try again.');
             resultImage.classList.remove('opacity-50');
+            regenerateBtn.disabled = false;
+            regenerateBtn.classList.remove('opacity-50');
             
             // Remove loading indicator
             const loadingElement = document.querySelector('.text-center.py-4');
@@ -87,10 +101,9 @@ function handleResultPage() {
     }
     
     // Add event listeners for result page
-    if (regenerateBtn) {
+    if (regenerateBtn && currentPrompt) {
         regenerateBtn.addEventListener('click', function() {
-            const currentPrompt = document.getElementById('currentPrompt').textContent;
-            regenerateDesign(currentPrompt);
+            regenerateDesign(currentPrompt.textContent);
         });
     }
 }
