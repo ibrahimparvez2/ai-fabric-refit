@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+    <h1 class="text-3xl font-bold mb-6 text-center">Your Fabric Refit Design</h1>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {% for path in image_paths %}
+        <div>
+            <img src="{{ path }}" alt="Fabric Input" class="fabric-preview">
+        </div>
+        {% endfor %}
+    </div>
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold mb-2">Design Prompt</h2>
+        <div class="p-4 bg-gray-50 rounded-lg">
+            <p class="text-gray-800">{{ prompt }}</p>
+        </div>
+    </div>
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold mb-4">Generated Design</h2>
+        <div class="bg-gray-100 p-4 rounded-lg text-center">
+            <img id="resultImage" src="{{ image_url }}" alt="Generated Design" class="result-image mx-auto">
+            {% if generation_text %}
+            <div id="generationText" class="mt-4 p-3 bg-gray-50 rounded text-sm text-gray-700">
+                {{ generation_text }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="mt-8 space-y-4">
+        <div class="flex justify-between">
+            <button id="regenerateBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition">
+                Regenerate Design
+            </button>
+            <a href="{{ url_for('refine_prompt') }}" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition">
+                Back to Refine
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

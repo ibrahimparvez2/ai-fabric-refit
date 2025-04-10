@@ -14,5 +14,10 @@ GOOGLE_CLOUD_PROJECT=<SET-IN.ENVFILE>
 OPENAI_API_KEY=<SET-IN.ENVFILE>
 ```
 
+```
+gcloud auth application-default login
+python app.py
+```
+
 [example demo](demo.mp4)
 

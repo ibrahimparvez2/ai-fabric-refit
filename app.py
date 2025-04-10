@@ -141,7 +141,8 @@ def generate_initial_prompt(image_tags: Dict[str, Union[Dict, str]]) -> str:
                 "Materials:\n" +
                 "\n".join(fabric_descriptions) + "\n\n"
                 
-                "Design a single simple, practical garment that combines these elements in a functional way."
+                "Design a single simple, practical garment NOT an outfit that combines these elements in a functional way"
+                "MAX 150 TOKEN"
             )
     
     print("Getting creative concept from Gemini...")
@@ -247,21 +248,36 @@ def refine_prompt():
         # Generate design based on refined prompt
         result = generate_refined_image(refined_prompt)
         
-        return render_template(
-            'results.html',
-            prompt=refined_prompt,
-            image_url=result['image_url'],
-            generation_text=result.get('generation_text', ''),
-            image_paths=[f"/static/uploads/{session['user_id']}/{os.path.basename(path)}" for path in session.get('image_paths', [])]
-        )
+        # Store results in session
+        session['result_image_url'] = result['image_url']
+        session['generation_text'] = result.get('generation_text', '')
+        
+        # Redirect to result page
+        return redirect(url_for('result'))
     
     return render_template(
         'refine.html',
-        image_paths=[f"/static/uploads/{session['user_id']}/{os.path.basename(path)}" for path in session.get('image_paths', [])],
+        image_paths=[f"/static/uploads/{session['user_id']}/{os.path.basename(path)}" 
+                    for path in session.get('image_paths', [])],
         image_tags=session.get('image_tags', {}),
         base_prompt=session.get('base_prompt', '')
     )
 
+@app.route('/result', methods=['GET'])
+def result():
+    """Result page with generated design"""
+    if 'refined_prompt' not in session:
+        return redirect(url_for('index'))
+    
+    return render_template(
+        'result.html',
+        prompt=session['refined_prompt'],
+        image_url=session.get('result_image_url', ''),
+        generation_text=session.get('generation_text', ''),
+        image_paths=[f"/static/uploads/{session['user_id']}/{os.path.basename(path)}" 
+                    for path in session.get('image_paths', [])]
+    )
+    
 @app.route('/api/regenerate', methods=['POST'])
 def regenerate_design():
     """API endpoint to regenerate design with modified prompt"""
