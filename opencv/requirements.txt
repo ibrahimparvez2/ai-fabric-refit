@@ -1,8 +1,10 @@
-diffusers 
-transformers 
-torch 
-torchvision 
-Pillow 
-numpy 
-opencv-python
+diffusers
+transformers
+xformers
 accelerate
+opencv-contrib-python
+controlnet_aux
+google-generativeai
+gradio
+Pillow
+torch
